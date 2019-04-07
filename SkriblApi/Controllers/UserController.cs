@@ -23,6 +23,9 @@ using System.Net.Mail;
 using static BasketApi.Global;
 using WebApplication1.ViewModels;
 using System.Web.Security;
+using ClosedXML.Excel;
+using System.Data;
+using System.Reflection;
 
 namespace BasketApi.Controllers
 {
@@ -274,7 +277,37 @@ namespace BasketApi.Controllers
                 return StatusCode(Utility.LogError(ex));
             }
         }
-
+         
+        [Route("ValidateUserEmail")]
+        [AllowAnonymous]
+        public async Task<IHttpActionResult> ValidateEmail()
+        {
+            var httpRequest = HttpContext.Current.Request;
+            string mEmail=httpRequest.Params["mEmail"];
+            try
+            {
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    if (ctx.Users.Any(x => x.Email == mEmail))
+                    {
+                        return Ok(new CustomResponse<string>
+                        {
+                            Message = "Conflict",
+                            StatusCode = (int)HttpStatusCode.Conflict,
+                            Result = "User with email already exists." 
+                        });
+                    }
+                    else
+                    {
+                        return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK,Result="OK" });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
 
         [Route("merchant/Register")]
         [AllowAnonymous]
@@ -470,6 +503,291 @@ namespace BasketApi.Controllers
                 return StatusCode(Utility.LogError(ex));
             }
         }
+        [Route("TestExec")]
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IHttpActionResult> SENDEMAIL() {
+           var ret= GetCardsFileForEmail(60, "m.hamid334@gmail.com", "List of Aladin Card", "Attached are the requested List of Cards");
+            return Ok(ret);
+
+        }
+        [Route("CoorporateRegister")]
+        [AllowAnonymous]
+        public async Task<IHttpActionResult> CoorporateRegister(
+            //string stotalCards = "", string Phone = "", string Nationality = "", string Password = "", string ConfirmPassword = "", 
+            //string Email = "", string LastName = "", string FirstName = ""
+            )
+        {
+            
+            try
+            {//GetCardsFileForEmail(60, "m.hamid334@gmail.com", "List of Aladin Card", "Attached are the requested List of Cards");
+
+                var httpRequest = HttpContext.Current.Request;
+                string newFullPath = string.Empty;
+                string fileNameOnly = string.Empty;
+                int totalCards = -1;
+                RegisterCustomerBindingModel model = new RegisterCustomerBindingModel();
+                model.FirstName = httpRequest.Params["FirstName"];
+                model.LastName = httpRequest.Params["FirstName"];
+                model.Email = httpRequest.Params["Email"];
+                model.ConfirmPassword = "NoPassword123";
+                model.Password = "NoPassword123";
+                model.Nationality = "No";
+                model.Phone = httpRequest.Params["Phone"];
+                totalCards = Convert.ToInt32(httpRequest.Params["totalCards"]);
+                Validate(model);
+
+                #region Validations
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                //if (!Request.Content.IsMimeMultipartContent())
+                //{
+                //    return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                //    {
+                //        Message = "UnsupportedMediaType",
+                //        StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                //        Result = new Error { ErrorMessage = "Multipart data is not included in request." }
+                //    });
+                //}
+                //else if (httpRequest.Files.Count > 1)
+                //{
+                //    return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                //    {
+                //        Message = "UnsupportedMediaType",
+                //        StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                //        Result = new Error { ErrorMessage = "Multiple images are not supported, please upload one image." }
+                //    });
+                //}
+                #endregion
+
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    if (ctx.Users.Any(x => x.Email == model.Email))
+                    {
+                        return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                        {
+                            Message = "Conflict",
+                            StatusCode = (int)HttpStatusCode.Conflict,
+                            Result = new Error { ErrorMessage = "User with email already exists." }
+                        });
+                    }
+
+
+                    HttpPostedFile postedFile = null;
+                    string fileExtension = string.Empty;
+
+                    #region ImageSaving
+                    if (httpRequest.Files.Count > 0)
+                    {
+                        postedFile = httpRequest.Files[0];
+                        if (postedFile != null && postedFile.ContentLength > 0)
+                        {
+                            //int MaxContentLength = 1024 * 1024 * 10; //Size = 1 MB  
+
+                            IList<string> AllowedFileExtensions = new List<string> { ".jpg", ".gif", ".png" };
+                            //var ext = postedFile.FileName.Substring(postedFile.FileName.LastIndexOf('.'));
+                            var ext = Path.GetExtension(postedFile.FileName);
+                            fileExtension = ext.ToLower();
+                            if (!AllowedFileExtensions.Contains(fileExtension))
+                            {
+                                return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                                {
+                                    Message = "UnsupportedMediaType",
+                                    StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                                    Result = new Error { ErrorMessage = "Please Upload image of type .jpg,.gif,.png." }
+                                });
+                            }
+                            else if (postedFile.ContentLength > Global.MaximumImageSize)
+                            {
+                                return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                                {
+                                    Message = "UnsupportedMediaType",
+                                    StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                                    Result = new Error { ErrorMessage = "Please Upload a file upto " + Global.ImageSize + "." }
+                                });
+                            }
+                            else
+                            {
+                            }
+                        }
+                    }
+
+                    #endregion
+
+                    User userModel;
+
+                    userModel = new User
+                    {
+                        Email = model.Email,
+                        Password = model.Password,
+                        FirstName = model.FirstName,
+                        LastName = model.LastName,
+                        Phone = model.Phone,
+                        Status = (int)Global.StatusCode.NotVerified,
+                        AccountType = "0",
+                        SignInType = -1,
+                        Nationality = model.Nationality,
+                        IsNotificationsOn = true,
+                        IsDeleted = false
+                    };
+
+
+                    ctx.Users.Add(userModel);
+                    ctx.SaveChanges();
+                    for (int i = 0; i < totalCards; i++)
+                    {
+                        var card = new CardRequest
+                        {
+                            CardNumber = GetCardNumber(),
+                            CVV = GetCVVCardNumber(),
+                            ExpiryDate = DateTime.Now.AddYears(1),
+                            DeliveryAddress = userModel.Area + " " + userModel.City,
+                            User_Id = userModel.Id,
+                            NomineeName = userModel.FirstName + " " + userModel.LastName
+
+                        };
+
+                        ctx.CardRequest.Add(card);
+                        ctx.SaveChanges();
+                    }
+                    if (httpRequest.Files.Count > 0)
+                    {
+                        newFullPath = HttpContext.Current.Server.MapPath("~/" + ConfigurationManager.AppSettings["UserImageFolderPath"] + userModel.Id + fileExtension);
+                        postedFile.SaveAs(newFullPath);
+                        userModel.ProfilePictureUrl = ConfigurationManager.AppSettings["UserImageFolderPath"] + userModel.Id + fileExtension;
+                        ctx.SaveChanges();
+                    }
+                    await GetCardsFileForEmail(userModel.Id, userModel.Email, "List of Aladin Card", "Dear " + userModel.LastName + ",\r\nThank you For registering with us\r\nAttached are the requested List of Cards\r\nThanks Aladdin Card Admin");
+                    await userModel.GenerateToken(Request);
+                    CustomResponse<User> response = new CustomResponse<User> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = userModel };
+                    return Ok(response);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
+        //[Route("ToDataTable")]
+        //[AllowAnonymous]
+        //[HttpGet]
+        public async Task<DataTable> ToDataTable<CardRequest>(List<CardRequest> items)
+
+        {
+
+            DataTable dataTable = new DataTable(typeof(CardRequest).Name);
+
+            //Get all the properties
+
+            PropertyInfo[] Props = typeof(CardRequest).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (PropertyInfo prop in Props)
+
+            {
+
+                //Setting column names as Property names
+
+                dataTable.Columns.Add(prop.Name);
+
+            }
+
+            foreach (CardRequest item in items)
+
+            {
+
+                var values = new object[Props.Length];
+
+                for (int i = 0; i < Props.Length; i++)
+
+                {
+
+                    //inserting property values to datatable rows
+
+                    values[i] = Props[i].GetValue(item, null);
+
+                }
+
+                dataTable.Rows.Add(values);
+
+            }
+
+            //put a breakpoint here and check datatable
+
+            return dataTable;
+
+        }
+        //[Route("GetCardsFileForEmail")]
+        //[AllowAnonymous]
+        //[HttpGet]
+        public async Task<IHttpActionResult> GetCardsFileForEmail(int UserId, string sEmail, string subject, string body)
+        {
+
+            try
+            {
+                string AppLocation = "";
+                AppLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase);
+                AppLocation = AppLocation.Replace("file:\\", "");
+                string file = AppLocation + "\\ListOfCards.xlsx";
+                using (var wb = new ClosedXML.Excel.XLWorkbook())
+                {
+                    using (SkriblContext ctx = new SkriblContext())
+                    {
+
+                        var Cards = ctx.CardRequest.Where(x => x.User_Id == UserId).ToList();
+                        var table = new System.Data.DataTable();
+                        table = ToDataTable(Cards).Result;
+
+
+                        wb.Worksheets.Add(table);
+                        wb.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        wb.Style.Font.Bold = true;
+                        wb.SaveAs(file);
+
+                    }
+                }
+                using (SmtpClient smtpClient = new SmtpClient())
+                        {
+                            var fromEmailAddress = ConfigurationManager.AppSettings["FromMailAddress"].ToString();
+                            var fromEmailDisplayName = ConfigurationManager.AppSettings["FromMailName"].ToString();
+                            var fromEmailPassword = ConfigurationManager.AppSettings["FromPassword"].ToString();
+
+                            smtpClient.Host = ConfigurationManager.AppSettings["SMTPHost"].ToString(); ;
+                            smtpClient.EnableSsl = false;
+                            smtpClient.Port = Convert.ToInt32(ConfigurationManager.AppSettings["SMTPPort"]);
+
+                            MailMessage message = new MailMessage();
+                            MailAddress fromAddress = new MailAddress(fromEmailAddress, fromEmailDisplayName);
+                            MailAddress toAddress = new MailAddress(sEmail);
+
+                            smtpClient.Credentials = new NetworkCredential(fromEmailAddress, fromEmailPassword);
+
+                            message.From = fromAddress;
+                            message.To.Add(toAddress);
+                            message.IsBodyHtml = true;
+                            message.Subject = subject;
+
+                            message.Attachments.Add(new Attachment(file));
+                            message.Body = body;
+
+                            smtpClient.Send(message);
+
+                            //  return "Sent"
+                       
+                   
+                }
+                return Ok(new CustomResponse<string> {Message= "Success",Result="Sent",StatusCode=200 });
+            }
+            catch (Exception ex)
+            {
+                StatusCode(Utility.LogError(ex));
+                return Ok(new CustomResponse<string> { Message = ex.Message, Result = "Exception Occurred", StatusCode = 200 });
+            }
+        }
+        
 
         [Route("Register")]
         [AllowAnonymous]
@@ -596,10 +914,12 @@ namespace BasketApi.Controllers
                     var card = new CardRequest
                     {
                         CardNumber = GetCardNumber(),
-                        CVV = "1234",
-                        ExpiryDate = DateTime.Now.AddYears(2),
+                        CVV = GetCVVCardNumber(),
+                        ExpiryDate = DateTime.Now.AddYears(1),
                         DeliveryAddress = userModel.Area + " " + userModel.City,
-                        User_Id = userModel.Id
+                        User_Id = userModel.Id,
+                        NomineeName = userModel.FirstName + " " + userModel.LastName
+                    
                     };
 
                     ctx.CardRequest.Add(card);
@@ -626,11 +946,7 @@ namespace BasketApi.Controllers
         public string GetCardNumber()
         {
             Random randm = new Random();
-            while (true)
-            {
-
-            }
-
+           
             string rand_card_value = "";
                 using (SkriblContext ctx = new SkriblContext())
                 {
@@ -646,6 +962,25 @@ namespace BasketApi.Controllers
                     
                 }
          
+            return rand_card_value;
+        }
+        public string GetCVVCardNumber()
+        {
+            Random randm = new Random();
+
+            string rand_card_value = "";
+            using (SkriblContext ctx = new SkriblContext())
+            {
+                do
+                {
+                     rand_card_value = randm.Next(1000, 9999).ToString();
+                    
+                    //rand_card_value = rand_card_value1 + " " + rand_card_value2 + " " + rand_card_value3 + " " + rand_card_value4;
+
+                } while (ctx.CardRequest.Any(x => x.CVV == rand_card_value));
+
+            }
+
             return rand_card_value;
         }
         [Route("UpdateCurrentProfile")]
@@ -1159,7 +1494,7 @@ namespace BasketApi.Controllers
                         });
                         ctx.SaveChanges();
 
-                        const string subject = "Reset your password - Basket App";
+                        const string subject = "Reset your password - Aladdin Card";
                         string body = "Use " + VerifyCode + " to reset your password.";
 
                         try
@@ -1184,6 +1519,7 @@ namespace BasketApi.Controllers
                                 message.To.Add(toAddress);
                                 message.IsBodyHtml = true;
                                 message.Subject = subject;
+                               
                                 message.Body = body;
 
                                 smtpClient.Send(message);
@@ -1413,33 +1749,40 @@ namespace BasketApi.Controllers
         }
 
 
-        //[HttpPost]
-        //[Route("Savings")]
-        //public IHttpActionResult Savings(SavingBindingModel model)
-        //{
-        //    try
-        //    {
-        //        if (!ModelState.IsValid)
-        //            return BadRequest(ModelState);
+        [HttpPost]
+        [Route("Savings")]
+        public IHttpActionResult AddUserSavings(SavingBindingModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
 
-        //        using (SkriblContext ctx = new SkriblContext())
-        //        {
-        //            ctx.Savings.Add(new DAL.Savings
-        //            {
-        //                CreatedDate = DateTime.Now,
-        //                SavingsAmount = model.Savings,
-        //                User_Id = model.User_Id
-        //            });
-        //            ctx.SaveChanges();
-        //            return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = "Record saved successfully." });
-        //        }
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    var userSavings = ctx.Savings.FirstOrDefault(x => x.User_Id == model.User_Id);
+                    if (userSavings == null)
+                    {
+                        ctx.Savings.Add(new DAL.Savings
+                        {
+                            CreatedDate = DateTime.Now,
+                            SavingsAmount = model.Savings,
+                            User_Id = model.User_Id
+                        });
+                        ctx.SaveChanges();
+                        return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = "Record saved successfully." });
+                    }
+                    else
+                        return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Conflict, StatusCode = (int)HttpStatusCode.Conflict, Result = "User Already Exists" });
 
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(Utility.LogError(ex));
-        //    }
-        //}
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
 
 
         [HttpGet]
@@ -1509,13 +1852,16 @@ namespace BasketApi.Controllers
             {
                 using (SkriblContext ctx = new SkriblContext())
                 {
-                    if (userRole == 0)
+                    if (userRole >= 0)
                     {
                         var user = ctx.Users.Find(userId);
+
                         if (user != null)
                         {
+                             user.UserName = user.FirstName + " " + user.LastName;
                             if (user.AccountType == userRole.ToString())
                             {
+                               
                                 return Ok(new
                                 {
                                     Message = Global.ResponseMessages.Success,
@@ -1526,7 +1872,8 @@ namespace BasketApi.Controllers
                                         user.FirstName,
                                         user.LastName,
                                         user.Email,
-                                        user.ProfilePictureUrl
+                                        user.ProfilePictureUrl,
+                                        user.UserName,user.Phone
                                     }
                                 });
                             }
@@ -1641,7 +1988,7 @@ namespace BasketApi.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+       // [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin","Guest")]
         [HttpGet]
         [Route("GetCardRequest")]
         public async Task<IHttpActionResult> GetCardRequest()
@@ -1656,7 +2003,12 @@ namespace BasketApi.Controllers
                     {
                         BasketSettings.LoadSettings();
 
-                        return Ok(new CustomResponse<object> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = new { RequestCard = cardModel } });
+                        return Ok(new CustomResponse<object>
+                        {
+                            Message = Global.ResponseMessages.Success,
+                            StatusCode = (int)HttpStatusCode.OK,
+                            Result = new { RequestCard = cardModel }
+                        });
                     }
                     else
                         return Ok(new CustomResponse<Error> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = new Error { ErrorMessage = "Invalid UserId" } });
@@ -1679,7 +2031,14 @@ namespace BasketApi.Controllers
 
                 using (SkriblContext ctx = new SkriblContext())
                 {
-                    return Ok(new CustomResponse<CardRequest> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted) });
+                    ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted).User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                  //  card[0].User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                    return Ok(new CustomResponse<CardRequest>
+                    {
+                        Message = Global.ResponseMessages.Success,
+                        StatusCode = (int)HttpStatusCode.OK,
+                        Result = ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted)
+                    });
                 }
 
             }
@@ -1689,7 +2048,39 @@ namespace BasketApi.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("GetBulkCardDetails")]
+        public IHttpActionResult GetBulkCardDetails(int User_Id)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
 
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    List<CardRequest> cards = new List<CardRequest>();
+                    cards = ctx.CardRequest.Where(x => x.User_Id == User_Id && !x.IsDeleted).ToList();
+                    foreach (var item in cards)
+                    {
+                        item.User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                    }
+                    //ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted).User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                    //  card[0].User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                    return Ok(new CustomResponse<List<CardRequest>>
+                    {
+                        Message = Global.ResponseMessages.Success,
+                        StatusCode = (int)HttpStatusCode.OK,
+                        Result = cards
+                    });
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
         public ApplicationUserManager UserManager
         {
             get

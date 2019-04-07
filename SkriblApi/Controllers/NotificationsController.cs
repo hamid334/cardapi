@@ -13,7 +13,7 @@ using System.Web.Http;
 
 namespace BasketApi.Controllers
 {
-    [BasketApi.Authorize("User", "Guest", "Deliverer")]
+  //  [BasketApi.Authorize("User", "Guest", "Deliverer","")]
     [RoutePrefix("api/User")]
     public class NotificationsController : ApiController
     {

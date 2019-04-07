@@ -19,7 +19,9 @@ namespace BasketApi
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
-            //GlobalConfiguration.Configuration.EnableSwagger(c => c.SingleApiVersion("BetaV2", "Basket App")).EnableSwaggerUi();
+            SqlServerTypes.Utilities.LoadNativeAssemblies(Server.MapPath("~/bin"));
+
+            //GlobalConfiguration.Configuration.EnableSwagger(c => c.SingleApiVersion("BetaV2", "Aladdin Card")).EnableSwaggerUi();
         }
     }
 }

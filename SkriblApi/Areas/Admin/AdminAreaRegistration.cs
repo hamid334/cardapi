@@ -1,6 +1,6 @@
 ﻿using System.Web.Mvc;
 
-namespace BasketApi.Areas.SubAdmin
+namespace BasketApi.Areas.Agent
 {
     public class AdminAreaRegistration : AreaRegistration 
     {

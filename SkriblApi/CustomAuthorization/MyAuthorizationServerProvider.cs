@@ -74,7 +74,7 @@ namespace BasketApi
                                     identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.Deliverer.ToString()));
                                     break;
                                 case 2:
-                                    identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.SubAdmin.ToString()));
+                                    identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.Agent.ToString()));
                                     break;
                                 case 3:
                                     identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.SuperAdmin.ToString()));
@@ -112,7 +112,7 @@ namespace BasketApi
                                     identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.Deliverer.ToString()));
                                     break;
                                 case 2:
-                                    identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.SubAdmin.ToString()));
+                                    identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.Agent.ToString()));
                                     break;
                                 case 3:
                                     identity.AddClaim(new Claim(ClaimTypes.Role, RoleTypes.SuperAdmin.ToString()));

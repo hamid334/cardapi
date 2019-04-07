@@ -10,7 +10,7 @@ using System.Data.Entity;
 
 namespace BasketApi.Controllers
 {
-    [BasketApi.Authorize("User", "Guest", "SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+    [BasketApi.Authorize("User", "Guest", "Agent", "SuperAdmin", "ApplicationAdmin")]
     [RoutePrefix("api/Deals")]
     public class DealsController : ApiController
     {

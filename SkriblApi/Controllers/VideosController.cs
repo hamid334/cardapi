@@ -17,7 +17,7 @@ namespace BasketApi.Controllers
     [RoutePrefix("api/Videos")]
     public class VideosController : ApiController
     {
-        [BasketApi.Authorize("User", "SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("User", "Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("GetHowItWorksVideoUrl")]
         public async Task<IHttpActionResult> GetHowItWorksVideoUrl()
@@ -40,7 +40,7 @@ namespace BasketApi.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpPost]
         [Route("AddHowItWorksVideo")]
         public async Task<IHttpActionResult> AddHowItWorksVideo()
@@ -76,7 +76,7 @@ namespace BasketApi.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpPost]
         [Route("AddHowItWorks")]
         public async Task<IHttpActionResult> AddHowItWorks(AddHowItWorksBindingModel model)

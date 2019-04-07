@@ -24,11 +24,13 @@ namespace WebApplication1.Areas.Admin.Controllers
             {
                 using (SkriblContext ctx = new SkriblContext())
                 {
+                    var list = ctx.Cities.Where(x => !x.IsDeleted).ToList();
+                    var sortedList = list.OrderBy(x => x.CityName).ToList();
                     return Ok(new CustomResponse<List<Cities>>
                     {
                         Message = Global.ResponseMessages.Success,
                         StatusCode = (int)HttpStatusCode.OK,
-                        Result = ctx.Cities.Where(x => !x.IsDeleted).ToList()
+                        Result = sortedList
                     });
                 }
             }

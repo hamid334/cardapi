@@ -1,6 +1,6 @@
 ﻿using BasketApi;
 using BasketApi.Areas.Admin.ViewModels;
-using BasketApi.Areas.SubAdmin.Models;
+using BasketApi.Areas.Agent.Models;
 using BasketApi.CustomAuthorization;
 using BasketApi.Models;
 using BasketApi.ViewModels;
@@ -32,7 +32,7 @@ namespace WebApplication1.Areas.Admin.Controllers
     [RoutePrefix("api/Admin")]
     public class AdminController : ApiController
     {
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         /// <summary>
         /// Add admin
         /// </summary>
@@ -231,7 +231,7 @@ namespace WebApplication1.Areas.Admin.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User")]
         /// <summary>
         /// Add category with image. This is multipart request
         /// </summary>
@@ -436,7 +436,7 @@ namespace WebApplication1.Areas.Admin.Controllers
             }
         }
 
-        //[BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         /// <summary>
         /// Add product with image. This is multipart request
         /// </summary>
@@ -587,9 +587,14 @@ namespace WebApplication1.Areas.Admin.Controllers
                         //model.ImageUrl = ConfigurationManager.AppSettings["ProductImageFolderPath"] + Path.GetFileName(newFullPath);
                     }
                     #endregion
-
                     if (model.Id == 0)
                     {
+                        if (!ctx.Admins.Any(x => x.Email == User.Identity.Name))
+                        {
+                            model.Category_Id = ctx.Stores.Where(x => x.MerchantEmail.Contains(User.Identity.Name)).FirstOrDefault().Category_Id;
+                            model.Store_Id = ctx.Stores.Where(x => x.MerchantEmail.Contains(User.Identity.Name)).FirstOrDefault().Id;
+                        }
+                        //var stores = ctx.Stores.Where(x => x.MerchantEmail.Contains(User.Identity.Name)).FirstOrDefault().Category_Id;
                         model.CreatedDate = DateTime.UtcNow;
                         ctx.Products.Add(model);
                         ctx.SaveChanges();
@@ -601,6 +606,18 @@ namespace WebApplication1.Areas.Admin.Controllers
                     }
                     else
                     {
+                        if (!ctx.Admins.Any(x => x.Email == User.Identity.Name))
+                        {
+                            Product _product = new Product();
+                            _product = ctx.Products.Where(y => y.Id == model.Id).FirstOrDefault();
+                            int prod_catid = -1;
+                            int prod_store_id = -1;
+                            prod_catid = Convert.ToInt32(_product.Category_Id);
+                            prod_store_id = _product.Store_Id;
+                            model.Store = ctx.Stores.Where(x => x.Id == prod_store_id).FirstOrDefault();
+                            model.Store_Id = prod_store_id;
+                            model.Category_Id = prod_catid;
+                        }
                         //existingProduct = ctx.Products.FirstOrDefault(x => x.Id == model.Id);
                         if (httpRequest.Files.Count == 0)
                         {
@@ -622,9 +639,6 @@ namespace WebApplication1.Areas.Admin.Controllers
                         ctx.Entry(existingProduct).CurrentValues.SetValues(model);
                         ctx.SaveChanges();
                     }
-
-
-
                     CustomResponse<Product> response = new CustomResponse<Product>
                     {
                         Message = Global.ResponseMessages.Success,
@@ -642,7 +656,7 @@ namespace WebApplication1.Areas.Admin.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "Merchant")]
         /// <summary>
         /// Add store with image, multipart request
         /// </summary>
@@ -676,7 +690,7 @@ namespace WebApplication1.Areas.Admin.Controllers
                 model.Longitude = Convert.ToDouble(httpRequest.Params["Long"]);
                 model.Description = httpRequest.Params["Description"];
                 model.Address = httpRequest.Params["Address"];
-
+                
                 TimeSpan openFrom, openTo;
                 TimeSpan.TryParse(httpRequest.Params["Open_From"], out openFrom);
                 TimeSpan.TryParse(httpRequest.Params["Open_To"], out openTo);
@@ -825,9 +839,19 @@ namespace WebApplication1.Areas.Admin.Controllers
                     storeModel.Location = Utility.CreatePoint(model.Latitude, model.Longitude);
                     storeModel.StoreDeliveryHours.Id = storeModel.Id;
                     storeModel.Address = model.Address;
-                    storeModel.Box_Id = model.BrandId;
                     storeModel.Category_Id = model.CategoryId;
-
+                    storeModel.Box_Id = model.BrandId;
+                    if (!ctx.Admins.Any(x => x.Email == User.Identity.Name))
+                    { var user = ctx.Users.Where(x => x.Email.Contains(User.Identity.Name)).FirstOrDefault();
+                        if (user != null) 
+                        {
+                           var _box = ctx.Boxes.Where(x => x.Name==user.FullName).FirstOrDefault();
+                            storeModel.MerchantEmail = User.Identity.Name;
+                            storeModel.Category_Id = user.CategoryId;
+                            storeModel.Box_Id = _box.Id;
+                        }
+                      
+                    }
                     var brand = await ctx.Boxes.FirstOrDefaultAsync(x => x.Id == model.BrandId);
 
                     if (brand != null)
@@ -838,6 +862,8 @@ namespace WebApplication1.Areas.Admin.Controllers
                             storeModel.MerchantEmail = merchant.Email;
                             storeModel.MerchantPhone = merchant.Phone;
                             storeModel.MerchantPin = merchant.MerchantPin;
+                            storeModel.Category_Id = merchant.CategoryId;
+                           
                         }
                     }
 
@@ -866,9 +892,14 @@ namespace WebApplication1.Areas.Admin.Controllers
                         else
                         {
                             Utility.DeleteFileIfExists(existingStore.ImageUrl);
-                            var guid = Guid.NewGuid();
-                            newFullPath = HttpContext.Current.Server.MapPath("~/" + ConfigurationManager.AppSettings["StoreImageFolderPath"] + storeModel.Id + "_" + guid + fileExtension);
+                        var guid = Guid.NewGuid();
+                           /*     newFullPath = HttpContext.Current.Server.MapPath("~/" + ConfigurationManager.AppSettings["StoreImageFolderPath"] + storeModel.Id + "_" + guid + fileExtension);
                             postedFile.SaveAs(newFullPath);
+                            */
+                            //var guid = Guid.NewGuid();
+                            //var temp = "~/" + ConfigurationManager.AppSettings["StoreImageFolderPath"] + storeModel.Id + "_" + guid + fileExtension;
+                            //newFullPath = HttpContext.Current.Server.MapPath(temp);
+                            //postedFile.SaveAs(newFullPath);
                             storeModel.ImageUrl = ConfigurationManager.AppSettings["StoreImageFolderPath"] + storeModel.Id + "_" + guid + fileExtension;
                         }
 
@@ -898,7 +929,7 @@ namespace WebApplication1.Areas.Admin.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         /// <summary>
         /// Get Dashboard Stats
         /// </summary>
@@ -937,7 +968,7 @@ namespace WebApplication1.Areas.Admin.Controllers
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("SearchAdmins")]
         public async Task<IHttpActionResult> SearchAdmins(string FirstName, string LastName, string Email, string Phone, int? StoreId)
@@ -1005,7 +1036,7 @@ AND ISNULL(Admins.Store_Id, 0) = 0 " + conditions;
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin", "User", "Guest")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User", "Guest")]
         [HttpGet]
         [Route("SearchProducts")]
         public async Task<IHttpActionResult> SearchProducts(string ProductName, float? ProductPrice, string CategoryName, int? StoreId)
@@ -1049,7 +1080,7 @@ AND ISNULL(Admins.Store_Id, 0) = 0 " + conditions;
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin", "User")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User")]
         [HttpGet]
         [Route("SearchCategories")]
         public async Task<IHttpActionResult> SearchCategories(string CategoryName, int? StoreId)
@@ -1088,7 +1119,7 @@ where Categories.IsDeleted = 0";
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin", "User")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User")]
         [HttpGet]
         [Route("SearchOffers")]
         public async Task<IHttpActionResult> SearchOffers(string OfferName, int? StoreId = null)
@@ -1126,7 +1157,7 @@ where Categories.IsDeleted = 0";
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin", "User")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User")]
         [HttpGet]
         [Route("SearchPackages")]
         public async Task<IHttpActionResult> SearchPackages(string PackageName, int? StoreId)
@@ -1153,10 +1184,10 @@ where Categories.IsDeleted = 0";
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("DeleteEntity")]
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         public async Task<IHttpActionResult> DeleteEntity(int EntityType, int Id)
         {
             try
@@ -1165,6 +1196,9 @@ where Categories.IsDeleted = 0";
                 {
                     switch (EntityType)
                     {
+                        case (int)BasketEntityTypes.City:
+                            ctx.Cities.FirstOrDefault(x => x.Id == Id).IsDeleted = true;
+                            break;
                         case (int)BasketEntityTypes.Product:
                             ctx.Products.FirstOrDefault(x => x.Id == Id).IsDeleted = true;
                             break;
@@ -1175,8 +1209,7 @@ where Categories.IsDeleted = 0";
                         case (int)BasketEntityTypes.Store:
                             ctx.Stores.FirstOrDefault(x => x.Id == Id).IsDeleted = true;
                             ctx.Database.ExecuteSqlCommand("update products set isdeleted = 1 where store_id = " + Id + @"; 
-                            update packages set isdeleted = 1 where store_id = " + Id + @"; 
-                            update categories set isdeleted = 1 where store_id = " + Id + @"; 
+                            update packages set isdeleted = 1 where store_id = " + Id + @";  
                             update offers set isdeleted = 1 where store_id = " + Id);
                             break;
                         case (int)BasketEntityTypes.Package:
@@ -1213,7 +1246,7 @@ where Categories.IsDeleted = 0";
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("GetReadyForDeliveryOrders")]
         public async Task<IHttpActionResult> GetReadyForDeliveryOrders()
@@ -1276,7 +1309,7 @@ and Orders.Status = " + (int)OrderStatuses.ReadyForDelivery;
         }
 
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpPost]
         [Route("AssignOrdersToDeliverer")]
         public async Task<IHttpActionResult> AssignOrdersToDeliverer(SearchOrdersListViewModel model)
@@ -1314,7 +1347,7 @@ and Orders.Status = " + (int)OrderStatuses.ReadyForDelivery;
         }
 
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("SearchOrders")]
         public async Task<IHttpActionResult> SearchOrders(string StartDate, string EndDate, int? OrderStatusId, int? PaymentMethodId, int? PaymentStatusId, int? StoreId)
@@ -1381,7 +1414,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpPost]
         [Route("ChangeOrderStatus")]
         public async Task<IHttpActionResult> ChangeOrderStatus(ChangeOrderStatusListBindingModel model)
@@ -1468,7 +1501,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [Route("AddPackage")]
         public async Task<IHttpActionResult> AddPackage()
         {
@@ -1704,7 +1737,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin","Merchant")]
         [Route("AddOffer")]
         public async Task<IHttpActionResult> AddOffer()
         {
@@ -1978,7 +2011,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User", "Guest")]
         [Route("ChangePassword")]
         public async Task<IHttpActionResult> ChangePassword(AdminSetPasswordBindingModel model)
         {
@@ -1996,16 +2029,33 @@ and
 
                 using (SkriblContext ctx = new SkriblContext())
                 {
-                    var user = ctx.Admins.FirstOrDefault(x => x.Email == userEmail && x.Password == model.OldPassword);
-                    if (user != null)
+                    if (ctx.Admins.Any(x => x.Email == User.Identity.Name))
                     {
-                        user.Password = model.NewPassword;
-                        ctx.SaveChanges();
-                        return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK });
+
+
+                        var user = ctx.Admins.FirstOrDefault(x => x.Email == userEmail && x.Password == model.OldPassword);
+                        if (user != null)
+                        {
+                            user.Password = model.NewPassword;
+                            ctx.SaveChanges();
+                            return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK });
+                        }
+                        else
+                            return Ok(new CustomResponse<Error> { Message = "Forbidden", StatusCode = (int)HttpStatusCode.Forbidden, Result = new Error { ErrorMessage = "Invalid old password." } });
                     }
                     else
-                        return Ok(new CustomResponse<Error> { Message = "Forbidden", StatusCode = (int)HttpStatusCode.Forbidden, Result = new Error { ErrorMessage = "Invalid old password." } });
+                    {
+                        var user = ctx.Users.FirstOrDefault(x => x.Email == userEmail && x.Password == model.OldPassword);
+                        if (user != null)
+                        {
+                            user.Password = model.NewPassword;
+                            ctx.SaveChanges();
+                            return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK });
+                        }
+                        else
+                            return Ok(new CustomResponse<Error> { Message = "Forbidden", StatusCode = (int)HttpStatusCode.Forbidden, Result = new Error { ErrorMessage = "Invalid old password." } });
 
+                    }
 
                 }
             }
@@ -2015,7 +2065,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [Route("AddBox")]
         public async Task<IHttpActionResult> AddBox(AddBoxBindingModel model)
         {
@@ -2039,7 +2089,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [Route("AddMerchant")]
         public async Task<IHttpActionResult> AddMerchantWithImage()
         {
@@ -2238,7 +2288,7 @@ and
             }
         }
 
-        //[BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         //[Route("AddBox")]
         //public async Task<IHttpActionResult> AddBox(AddBoxBindingModel model)
         //{
@@ -2282,7 +2332,7 @@ and
         //    }
         //}
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [Route("GetAllBoxes")]
         public async Task<IHttpActionResult> GetAllBoxes()
         {
@@ -2304,7 +2354,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [Route("AddNotification")]
         public async Task<IHttpActionResult> AddNotification(NotificationBindingModel model)
         {
@@ -2352,7 +2402,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("SearchNotifications")]
         public async Task<IHttpActionResult> SearchNotifications()
@@ -2407,7 +2457,7 @@ and
 
 
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpPost]
         [Route("ChangeUserStatuses")]
         public async Task<IHttpActionResult> ChangeUserStatuses(ChangeUserStatusListBindingModel model)
@@ -2434,7 +2484,7 @@ and
             }
         }
 
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpPost]
         [Route("ChangeBoxStatuses")]
         public async Task<IHttpActionResult> ChangeBoxStatuses(ChangeBoxStatusListBindingModel model)
@@ -2458,7 +2508,7 @@ and
 
 
 
-        //[BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
         [Route("GetUsers")]
         public async Task<IHttpActionResult> GetUsers()
@@ -2487,8 +2537,8 @@ and
 
         // [BasketApi.Authorize("SuperAdmin", "ApplicationAdmin")]
         [HttpGet]
-        [Route("GetSubAdmins")]
-        public async Task<IHttpActionResult> GetSubAdmins()
+        [Route("GetAgents")]
+        public async Task<IHttpActionResult> GetAgents()
         {
             try
             {
@@ -2500,7 +2550,7 @@ and
                         StatusCode = (int)HttpStatusCode.OK,
                         Result = new AdminViewModel
                         {
-                            SubAdmins = ctx.Admins.Where(x => x.Role == 2).Select(x => new SubAdminViewModel
+                            Agents = ctx.Admins.Where(x => x.Role == 2).Select(x => new AgentViewModel
                             {
                                 Id = x.Id,
                                 FirstName = x.FirstName,
@@ -2548,7 +2598,7 @@ and
             }
         }
 
-        //[BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
 
         [HttpGet]
         [Route("GetUser")]
@@ -2591,7 +2641,13 @@ and
                     switch (EntityType)
                     {
                         case (int)BasketEntityTypes.Product:
-                            return Ok(new CustomResponse<Product> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = ctx.Products.FirstOrDefault(x => x.Id == Id && x.IsDeleted == false) });
+                            var product = ctx.Products.FirstOrDefault(x => x.Id == Id && x.IsDeleted == false);
+                            product.Store = ctx.Stores.FirstOrDefault(x => x.Id == product.Store_Id && x.IsDeleted == false);
+                            return Ok(new CustomResponse<Product> {
+                                Message = Global.ResponseMessages.Success,
+                                StatusCode = (int)HttpStatusCode.OK,
+                                Result = product
+                            });
 
                         case (int)BasketEntityTypes.Category:
                             return Ok(new CustomResponse<Category> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = ctx.Categories.FirstOrDefault(x => x.Id == Id && x.IsDeleted == false) });
@@ -2622,8 +2678,6 @@ and
                 return StatusCode(Utility.LogError(ex));
             }
         }
-
-
         [HttpGet]
         [Route("GetStoreByCategoryIdForAdmin")]
         public async Task<IHttpActionResult> GetStoreByCategoryIdForAdmin(int Category_Id)
@@ -2645,7 +2699,100 @@ and
                 return StatusCode(Utility.LogError(ex));
             }
         }
+       
 
+        [HttpGet]
+        [Route("GetStoreByMerchantIdForAdmin")]
+        public async Task<IHttpActionResult> GetStoreByMerchantIdForAdmin(int Box_Id)
+        {
+            try
+            {
+                using (SkriblContext ctx = new SkriblContext())
+                {
+
+                    var Stores = ctx.Stores.Where(x => x.Box_Id == Box_Id && !x.IsDeleted).ToList();
+
+                    return Ok(new CustomResponse<List<Store>> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = Stores });
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
+        [HttpGet]
+        [Route("GetMerchantByCategoryIdForAdmin")]
+        public async Task<IHttpActionResult> GetMerchantByCategoryIdForAdmin(int Category_Id)
+        {
+            try
+            {
+                using (SkriblContext ctx = new SkriblContext())
+                {
+
+                    var Boxes = ctx.Boxes.Where(x => x.Category_Id == Category_Id && !x.IsDeleted).ToList();
+
+                    return Ok(new CustomResponse<List<Box>> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = Boxes });
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
+        [HttpGet]
+        [Route("GetAllBrands")]
+        public async Task<IHttpActionResult> GetAllBrands()
+        {
+            try
+            {
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    CustomResponse<BoxViewModel> response = new CustomResponse<BoxViewModel>
+                    {
+                        Message = Global.ResponseMessages.Success,
+                        StatusCode = (int)HttpStatusCode.OK,
+                        Result = new BoxViewModel
+                        {
+                            Boxes = ctx.Boxes.Where(x => !x.IsDeleted).ToList(),
+                            TotalRecords = ctx.Boxes.Count(x => !x.IsDeleted)
+                        }
+                    };
+                    return Ok(response);
+                }
+
+            }
+            /* try
+            {
+               using (SkriblContext ctx = new SkriblContext())
+                {
+                    var stores = new List<Box>();
+
+                    stores =  ctx.Boxes.Where(x => x.IsDeleted == false).ToList().Select(x => new Box
+                    {
+                        Id = x.Id,
+                        Name = x.Name
+
+                    }).ToList();
+                   
+                    CustomResponse<IEnumerable<Box>> response = new CustomResponse<IEnumerable<Box>>
+                    {
+                        Message = Global.ResponseMessages.Success,
+                        StatusCode = (int)HttpStatusCode.OK,
+                        Result = stores
+                    };
+                    return Ok(response);
+                }
+            }*/
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
+       
         [HttpGet]
         [Route("GetBrandsByCategoryIdForAdmin")]
         public async Task<IHttpActionResult> GetBrandsByCategoryIdForAdmin(int Category_Id)
@@ -2665,7 +2812,7 @@ and
                 return StatusCode(Utility.LogError(ex));
             }
         }
-        [BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin")]
+        [BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin")]
         [Route("AddCity")]
         public async Task<IHttpActionResult> AddCity(AddCityBindingModel model)
         {
@@ -2682,14 +2829,17 @@ and
 
                     if (model.Id == 0)
                     {
-                        city = ctx.Cities.Add(new Cities
+                        if (ctx.Cities.Where(x => x.CityName == model.CityName && x.Latitude == model.Latitude && x.Longitude == model.Longitude).ToList().Count == 0) 
                         {
-                            CityName = model.CityName,
-                            Latitude = model.Latitude,
-                            Longitude = model.Longitude,
-                            IsDeleted = false
-                        });
-                        ctx.SaveChanges();
+                            city = ctx.Cities.Add(new Cities
+                            {
+                                CityName = model.CityName,
+                                Latitude = model.Latitude,
+                                Longitude = model.Longitude,
+                                IsDeleted = false
+                            });
+                            ctx.SaveChanges();
+                        }
                     }
                     else
                     {

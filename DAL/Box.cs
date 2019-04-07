@@ -34,4 +34,14 @@ namespace DAL
         public short Status { get; set; }
 
     }
+    public class BoxViewModel
+    {
+        public BoxViewModel()
+        {
+            Boxes = new List<Box>();
+        }
+        public List<Box> Boxes { get; set; }
+
+        public int TotalRecords { get; set; }
+    }
 }

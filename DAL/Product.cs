@@ -6,7 +6,15 @@ namespace DAL
     using System.ComponentModel.DataAnnotations;
     using System.ComponentModel.DataAnnotations.Schema;
     using System.Data.Entity.Spatial;
-
+    public partial class OfferDistance
+    {
+        public OfferDistance()
+        {
+            DistanceKM = new float();
+        }
+        public virtual float DistanceKM { get; set; }
+        public virtual int ID { get; set; }
+    }
     public partial class Product
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
@@ -17,6 +25,7 @@ namespace DAL
             //Order_Items = new HashSet<Order_Items>();
             Package_Products = new HashSet<Package_Products>();
             ProductRatings = new HashSet<ProductRating>();
+           
         }
 
         public int Id { get; set; }
@@ -33,6 +42,8 @@ namespace DAL
 
         //[Required]
         public string Description { get; set; }
+        //[Required]
+       // public float DistanceKM { get; set; }
 
         [NotMapped]
         public string Weight { get; set; }
@@ -67,7 +78,10 @@ namespace DAL
 
         public virtual Category Category { get; set; }
 
-        [JsonIgnore]
+        [NotMapped]
+        public double? DistanceKM { get; set; }
+
+         [JsonIgnore]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Favourite> Favourites { get; set; }
 

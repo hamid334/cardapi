@@ -6,7 +6,7 @@ using System.Data.Entity.Spatial;
 using System.Linq;
 using System.Web;
 
-namespace BasketApi.Areas.SubAdmin.Models
+namespace BasketApi.Areas.Agent.Models
 {
     public class CategoryBindingModel
     {

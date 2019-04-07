@@ -12,7 +12,7 @@ using BasketApi.ViewModels;
 
 namespace BasketApi.Areas.Admin.Controllers
 {
-    //[BasketApi.Authorize("SubAdmin", "SuperAdmin", "ApplicationAdmin", "User")]
+    //[BasketApi.Authorize("Agent", "SuperAdmin", "ApplicationAdmin", "User")]
     [RoutePrefix("api/Store")]
     public class StoresController : ApiController
     {
@@ -28,11 +28,18 @@ namespace BasketApi.Areas.Admin.Controllers
             {
                 using (SkriblContext ctx = new SkriblContext())
                 {
-                    var stores = ctx.Stores.Where(x => x.IsDeleted == false).ToList();
+                    var stores = new List<Store>();
+                    if (ctx.Admins.Any(x => x.Email == User.Identity.Name))
+                    {
+                         stores = ctx.Stores.Where(x => x.IsDeleted == false).ToList();
+                    }
+                    else
+                    {  stores = ctx.Stores.Where(x => x.IsDeleted == false && x.MerchantEmail == User.Identity.Name).ToList(); }
 
                     foreach (var store in stores)
                     {
                         store.CalculateAverageRating();
+                        
                     }
                     CustomResponse<IEnumerable<Store>> response = new CustomResponse<IEnumerable<Store>>
                     {
@@ -199,34 +206,42 @@ namespace BasketApi.Areas.Admin.Controllers
             }
         }
 
-        
+
         /// <summary>
         /// Get Stores Count
         /// </summary>
         /// <returns></returns>
-        //[HttpGet]
-        //[Route("GetStoresCount")]
-        //public async Task<IHttpActionResult> GetStoresCount()
-        //{
-        //    try
-        //    {
-        //        using (SkriblContext ctx = new SkriblContext())
-        //        {
-        //            StoreCountViewModel model = new StoreCountViewModel { TotalStores = ctx.Stores.Count() };
-        //            CustomResponse<StoreCountViewModel> response = new CustomResponse<StoreCountViewModel>
-        //            {
-        //                Message = Global.ResponseMessages.Success,
-        //                StatusCode = (int)HttpStatusCode.OK,
-        //                Result = model
-        //            };
-        //            return Ok(response);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(Utility.LogError(ex));
-        //    }
-        //}
+        [HttpGet]
+        [Route("GetStoresByProductId")]
+        public async Task<IHttpActionResult> GetStoresByProductId(int OfferId)
+        {
+            try
+            {
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    List<Store> model = new List<Store>();
+                    var offer = ctx.Products.Where(x => x.Id == OfferId).FirstOrDefault();
+                    var offers = ctx.Products.Where(x => x.Name == offer.Name && x.Price == offer.Price && x.DiscountPercentage == offer.DiscountPercentage && x.DiscountPrice == offer.DiscountPrice).ToList();
+                    foreach (var item in offers)
+                    {
+                       if(! model.Contains(item.Store))
+                        model.Add(ctx.Stores.Where(x => x.Id == item.Store_Id).FirstOrDefault());
+                    }
+                   // var model = ctx.Stores.Where(x => x.Id == offer.Store_Id).ToList();
+                    CustomResponse<List<Store>> response = new CustomResponse<List<Store>>
+                    {
+                        Message = Global.ResponseMessages.Success,
+                        StatusCode = (int)HttpStatusCode.OK,
+                        Result = model
+                    };
+                    return Ok(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
 
         /// <summary>
         /// Get Nearby Stores, Default radius is 50 miles. To get all stores, give long and lat = 0

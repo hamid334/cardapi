@@ -9,11 +9,11 @@ namespace WebApplication1.ViewModels
     {
         public AdminViewModel()
         {
-            SubAdmins = new List<SubAdminViewModel>();
+            Agents = new List<AgentViewModel>();
         }
-        public List<SubAdminViewModel> SubAdmins { get; set; }
+        public List<AgentViewModel> Agents { get; set; }
     }
-    public class SubAdminViewModel
+    public class AgentViewModel
     {
         public int Id { get; set; }
         public string FirstName { get; set; }

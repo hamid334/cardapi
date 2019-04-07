@@ -9,12 +9,12 @@ namespace BasketApi.CustomAuthorization
     //{
     //    //User,
     //    //Deliverer,
-    //    //SubAdmin,
+    //    //Agent,
     //    //SuperAdmin,
     //    //ApplicationAdmin
     //    public const string User = "User";
     //    public const string Deliverer = "Deliverer";
-    //    public const string SubAdmin = "SubAdmin";
+    //    public const string Agent = "Agent";
     //    public const string SuperAdmin = "SuperAdmin";
     //    public const string ApplicationAdmin = "ApplicationAdmin";
     //}
@@ -23,7 +23,7 @@ namespace BasketApi.CustomAuthorization
     {
         User = 0,
         Deliverer = 1,
-        SubAdmin = 2,
+        Agent = 2,
         SuperAdmin = 3,
         ApplicationAdmin = 4,
         Guest = 5
