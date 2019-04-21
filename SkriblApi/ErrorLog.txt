@@ -5709,3 +5709,27 @@ DateTime : 08/04/2019 1:19:07 AM
 MessageObject reference not set to an instance of an object.
 
 StackTrace   at WebApplication1.Areas.Admin.Controllers.AdminController.<AddStoreWithImage>d__3.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Areas\Admin\Controllers\AdminController.cs:line 877
+DateTime : 11/04/2019 12:31:25 AM
+
+
+MessageObject reference not set to an instance of an object.
+
+StackTrace   at WebApplication1.Areas.Admin.Controllers.AdminController.<AddStoreWithImage>d__3.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Areas\Admin\Controllers\AdminController.cs:line 877
+DateTime : 11/04/2019 12:35:52 AM
+
+
+MessageObject reference not set to an instance of an object.
+
+StackTrace   at WebApplication1.Areas.Admin.Controllers.AdminController.<AddStoreWithImage>d__3.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Areas\Admin\Controllers\AdminController.cs:line 877
+DateTime : 20/04/2019 5:08:00 PM
+
+
+MessageObject reference not set to an instance of an object.
+
+StackTrace   at WebApplication1.Areas.Admin.Controllers.AdminController.<AddStoreWithImage>d__3.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Areas\Admin\Controllers\AdminController.cs:line 877
+DateTime : 20/04/2019 5:28:01 PM
+
+
+MessageObject reference not set to an instance of an object.
+
+StackTrace   at WebApplication1.Areas.Admin.Controllers.AdminController.<AddStoreWithImage>d__3.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Areas\Admin\Controllers\AdminController.cs:line 878
