@@ -5733,3 +5733,27 @@ DateTime : 20/04/2019 5:28:01 PM
 MessageObject reference not set to an instance of an object.
 
 StackTrace   at WebApplication1.Areas.Admin.Controllers.AdminController.<AddStoreWithImage>d__3.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Areas\Admin\Controllers\AdminController.cs:line 878
+DateTime : 28/04/2019 12:54:17 AM
+
+
+MessageFailure sending mail.
+
+StackTrace   at System.Net.Mail.SmtpClient.Send(MailMessage message)
+   at BasketApi.Controllers.UserController.<GetCardsFileForEmail>d__13.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Controllers\UserController.cs:line 776
+
+Inner Exception : Unable to connect to the remote server
+
+Inner Exception : A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond 72.167.234.197:25
+------******------
+DateTime : 28/04/2019 12:59:13 AM
+
+
+MessageFailure sending mail.
+
+StackTrace   at System.Net.Mail.SmtpClient.Send(MailMessage message)
+   at BasketApi.Controllers.UserController.<GetCardsFileForEmail>d__13.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Controllers\UserController.cs:line 776
+
+Inner Exception : Unable to connect to the remote server
+
+Inner Exception : A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond 72.167.234.197:25
+------******------

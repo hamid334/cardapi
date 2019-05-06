@@ -69,6 +69,15 @@ namespace WebApplication1.Controllers
                 request.Currency = Currency.TRY.ToString();
                 request.Installment = 1;
                 request.BasketId = paymentId;
+
+                PaymentRequests paytodb = new PaymentRequests();
+                paytodb.Locale = request.Locale;
+                paytodb.ConversationId = request.ConversationId;
+                paytodb.Price = request.Price;
+                paytodb.PaidPrice = request.PaidPrice;
+                paytodb.Currency = request.Currency;
+                paytodb.BasketId = request.BasketId;
+
                 PaymentChannel outputval;
                 Enum.TryParse(httpRequest.Params["PaymentChannel"].ToString(), out  outputval);
                 request.PaymentChannel = outputval.ToString();// Enum.GetName(typeof(PaymentChannel), httpRequest.Params["PaymentChannel"].ToString());
@@ -132,6 +141,13 @@ namespace WebApplication1.Controllers
                     StatusCode = (int)HttpStatusCode.OK,
                     Result = status
                 };
+                if (status=="success")
+                {
+                    using (SkriblContext context =new SkriblContext())
+                    {
+                        context.PaymentRequests.Add(paytodb); context.SaveChanges();
+                    }
+                }
                 return Ok(response);
             }
             catch (Exception ex)
@@ -141,4 +157,5 @@ namespace WebApplication1.Controllers
 
         }
     }
+    
 }

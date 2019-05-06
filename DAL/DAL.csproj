@@ -106,6 +106,7 @@
     <Compile Include="Migrations\201901011128452_addPin.Designer.cs">
       <DependentUpon>201901011128452_addPin.cs</DependentUpon>
     </Compile>
+    <Compile Include="PaymentRequests.cs" />
     <Compile Include="Savings.cs" />
     <Compile Include="SkriblContext.cs" />
     <Compile Include="Category.cs" />

@@ -59,9 +59,7 @@ namespace DAL
         public virtual DbSet<Cities> Cities { get; set; }
         public virtual DbSet<Savings> Savings { get; set; }
         public virtual DbSet<CardRequest> CardRequest { get; set; }
-
-
-
+        public virtual DbSet<PaymentRequests> PaymentRequests { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -427,7 +425,9 @@ namespace DAL
                 .HasForeignKey(e => e.User_ID)
                 .WillCascadeOnDelete(false);
 
-
+            modelBuilder.Entity<PaymentRequests>()
+                .HasKey(e => e.Id);
+                        
 
             modelBuilder.Entity<User>()
                 .HasMany(e => e.Orders)
