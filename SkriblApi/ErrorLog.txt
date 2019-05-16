@@ -5757,3 +5757,15 @@ Inner Exception : Unable to connect to the remote server
 
 Inner Exception : A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond 72.167.234.197:25
 ------******------
+DateTime : 16/05/2019 3:54:15 AM
+
+
+MessageObject reference not set to an instance of an object.
+
+StackTrace   at BasketApi.Controllers.UserController.GetCardDetails(Int32 User_Id)
+DateTime : 16/05/2019 3:55:40 AM
+
+
+MessageObject reference not set to an instance of an object.
+
+StackTrace   at BasketApi.Controllers.UserController.GetCardDetails(Int32 User_Id)

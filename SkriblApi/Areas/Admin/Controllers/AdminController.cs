@@ -2829,7 +2829,7 @@ and
 
                     if (model.Id == 0)
                     {
-                        if (ctx.Cities.Where(x => x.CityName == model.CityName && x.Latitude == model.Latitude && x.Longitude == model.Longitude).ToList().Count == 0) 
+                        if (ctx.Cities.Where(x => x.CityName == model.CityName && x.IsDeleted == false && Convert.ToInt32(x.Latitude) == Convert.ToInt32(model.Latitude) && Convert.ToInt32(x.Longitude) == Convert.ToInt32(model.Longitude)).ToList().Count == 0) 
                         {
                             city = ctx.Cities.Add(new Cities
                             {

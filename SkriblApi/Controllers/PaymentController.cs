@@ -141,11 +141,12 @@ namespace WebApplication1.Controllers
                     StatusCode = (int)HttpStatusCode.OK,
                     Result = status
                 };
-                if (status=="success")
+                if (status == "success")
                 {
-                    using (SkriblContext context =new SkriblContext())
+                    using (SkriblContext context = new SkriblContext())
                     {
-                        context.PaymentRequests.Add(paytodb); context.SaveChanges();
+                        context.PaymentRequests.Add(paytodb);
+                        context.SaveChanges();
                     }
                 }
                 return Ok(response);

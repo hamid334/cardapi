@@ -2031,13 +2031,19 @@ namespace BasketApi.Controllers
 
                 using (SkriblContext ctx = new SkriblContext())
                 {
-                    ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted).User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                    var user= ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
+                    var cardrequest = ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted);
+                    if (cardrequest!=null)
+                    {
+                        cardrequest.User = user;
+                    }
+//                    var cardrequest = ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted);
                   //  card[0].User = ctx.Users.FirstOrDefault(x => x.Id == User_Id && !x.IsDeleted);
                     return Ok(new CustomResponse<CardRequest>
                     {
                         Message = Global.ResponseMessages.Success,
                         StatusCode = (int)HttpStatusCode.OK,
-                        Result = ctx.CardRequest.FirstOrDefault(x => x.User_Id == User_Id && !x.IsDeleted)
+                        Result = cardrequest
                     });
                 }
 
