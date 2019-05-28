@@ -503,14 +503,14 @@ namespace BasketApi.Controllers
                 return StatusCode(Utility.LogError(ex));
             }
         }
-        [Route("TestExec")]
-        [AllowAnonymous]
-        [HttpGet]
-        public async Task<IHttpActionResult> SENDEMAIL() {
-           var ret= GetCardsFileForEmail(60, "m.hamid334@gmail.com", "List of Aladin Card", "Attached are the requested List of Cards");
-            return Ok(ret);
+        //[Route("TestExec")]
+        //[AllowAnonymous]
+        //[HttpGet]
+        //public async Task<IHttpActionResult> SENDEMAIL() {
+        //   var ret= GetCardsFileForEmail(60, "m.hamid334@gmail.com", "List of Aladin Card", "Attached are the requested List of Cards");
+        //    return Ok(ret);
 
-        }
+        //}
         [Route("CoorporateRegister")]
         [AllowAnonymous]
         public async Task<IHttpActionResult> CoorporateRegister(
@@ -787,7 +787,7 @@ namespace BasketApi.Controllers
                 return Ok(new CustomResponse<string> { Message = ex.Message, Result = "Exception Occurred", StatusCode = 200 });
             }
         }
-        
+
 
         [Route("Register")]
         [AllowAnonymous]
@@ -919,10 +919,189 @@ namespace BasketApi.Controllers
                         DeliveryAddress = userModel.Area + " " + userModel.City,
                         User_Id = userModel.Id,
                         NomineeName = userModel.FirstName + " " + userModel.LastName
-                    
+
                     };
 
                     ctx.CardRequest.Add(card);
+                    ctx.SaveChanges();
+                    if (httpRequest.Files.Count > 0)
+                    {
+                        newFullPath = HttpContext.Current.Server.MapPath("~/" + ConfigurationManager.AppSettings["UserImageFolderPath"] + userModel.Id + fileExtension);
+                        postedFile.SaveAs(newFullPath);
+                        userModel.ProfilePictureUrl = ConfigurationManager.AppSettings["UserImageFolderPath"] + userModel.Id + fileExtension;
+                        ctx.SaveChanges();
+                    }
+
+                    await userModel.GenerateToken(Request);
+                    CustomResponse<User> response = new CustomResponse<User> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = userModel };
+                    return Ok(response);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(Utility.LogError(ex));
+            }
+        }
+        [Route("IsValidCorporateUser")]
+        [HttpGet]
+        public async Task<IHttpActionResult> IsValidCorporateUser(string cardNo)
+        {
+            using (SkriblContext ctx = new SkriblContext())
+            {
+                var card = ctx.CardRequest.Where(x => x.CardNumber.Trim() == cardNo.Trim()).FirstOrDefault();
+
+                if (card != null)
+                {
+                    var user = ctx.Users.Where(x => x.Id == card.User_Id && x.SignInType == -1 && x.IsDeleted == false).FirstOrDefault();
+                    if (user != null)
+                    {
+                        return Ok(new CustomResponse<User> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.OK, Result = user });
+                    }
+                    else
+                    {
+                        return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.Conflict, StatusCode = (int)HttpStatusCode.Conflict, Result = "User with this card details Already Exists" });
+                    }
+
+                }
+                else
+                {
+                    // return Ok(new CustomResponse<User> { Message = Global.ResponseMessages.Success, StatusCode = (int)HttpStatusCode.NotFound });
+                    return Ok(new CustomResponse<string> { Message = Global.ResponseMessages.NotFound, StatusCode = (int)HttpStatusCode.NotFound });
+                }
+            }
+        }
+        [Route("CorporateUserRegister")]
+        [HttpGet]
+        public async Task<IHttpActionResult> CorporateUserRegister()
+        {
+            try
+            {
+                var httpRequest = HttpContext.Current.Request;
+                string newFullPath = string.Empty;
+                string fileNameOnly = string.Empty;
+                string usercardNo = string.Empty;
+                RegisterCustomerBindingModel model = new RegisterCustomerBindingModel();
+
+                //model.FirstName = "FirstName";
+                //model.LastName = "LastName";
+                //model.Email = "Email@gmail.com";
+                //model.ConfirmPassword = "ConfirmPassword@123";
+                //model.Password = "ConfirmPassword@123";
+                //model.Nationality = "Non-Turkish";
+                model.FirstName = httpRequest.Params["FirstName"];
+                model.LastName = httpRequest.Params["LastName"];
+                model.Email = httpRequest.Params["Email"];
+                model.ConfirmPassword = httpRequest.Params["ConfirmPassword"];
+                model.Password = httpRequest.Params["Password"];
+                model.Nationality = httpRequest.Params["Nationality"];
+                usercardNo = httpRequest.Params["CardNo"];
+
+                Validate(model);
+
+                #region Validations
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                if (!Request.Content.IsMimeMultipartContent())
+                {
+                    return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                    {
+                        Message = "UnsupportedMediaType",
+                        StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                        Result = new Error { ErrorMessage = "Multipart data is not included in request." }
+                    });
+                }
+                else if (httpRequest.Files.Count > 1)
+                {
+                    return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                    {
+                        Message = "UnsupportedMediaType",
+                        StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                        Result = new Error { ErrorMessage = "Multiple images are not supported, please upload one image." }
+                    });
+                }
+                #endregion
+
+                using (SkriblContext ctx = new SkriblContext())
+                {
+                    if (ctx.Users.Any(x => x.Email == model.Email))
+                    {
+                        return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                        {
+                            Message = "Conflict",
+                            StatusCode = (int)HttpStatusCode.Conflict,
+                            Result = new Error { ErrorMessage = "User with email already exists." }
+                        });
+                    }
+
+
+                    HttpPostedFile postedFile = null;
+                    string fileExtension = string.Empty;
+
+                    #region ImageSaving
+                    if (httpRequest.Files.Count > 0)
+                    {
+                        postedFile = httpRequest.Files[0];
+                        if (postedFile != null && postedFile.ContentLength > 0)
+                        {
+                            //int MaxContentLength = 1024 * 1024 * 10; //Size = 1 MB  
+
+                            IList<string> AllowedFileExtensions = new List<string> { ".jpg", ".gif", ".png" };
+                            //var ext = postedFile.FileName.Substring(postedFile.FileName.LastIndexOf('.'));
+                            var ext = Path.GetExtension(postedFile.FileName);
+                            fileExtension = ext.ToLower();
+                            if (!AllowedFileExtensions.Contains(fileExtension))
+                            {
+                                return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                                {
+                                    Message = "UnsupportedMediaType",
+                                    StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                                    Result = new Error { ErrorMessage = "Please Upload image of type .jpg,.gif,.png." }
+                                });
+                            }
+                            else if (postedFile.ContentLength > Global.MaximumImageSize)
+                            {
+                                return Content(HttpStatusCode.OK, new CustomResponse<Error>
+                                {
+                                    Message = "UnsupportedMediaType",
+                                    StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                                    Result = new Error { ErrorMessage = "Please Upload a file upto " + Global.ImageSize + "." }
+                                });
+                            }
+                            else
+                            {
+                            }
+                        }
+                    }
+
+                    #endregion
+
+                    User userModel;
+
+                    userModel = new User
+                    {
+                        Email = model.Email,
+                        Password = model.Password,
+                        FirstName = model.FirstName,
+                        LastName = model.LastName,
+                        Status = (int)Global.StatusCode.NotVerified,
+                        AccountType = "0",
+                        SignInType = 0,
+                        Nationality = model.Nationality,
+                        IsNotificationsOn = true,
+                        IsDeleted = false
+                    };
+
+
+                    ctx.Users.Add(userModel);
+                    ctx.SaveChanges();
+                    var carddetails = ctx.CardRequest.Where(x => x.CardNumber == usercardNo).FirstOrDefault();
+                    CardRequest existingCard = new CardRequest();
+                    carddetails.User_Id = userModel.Id;
+                    ctx.Entry(carddetails).State = EntityState.Modified;//this is for modiying/update existing entry
                     ctx.SaveChanges();
                     if (httpRequest.Files.Count > 0)
                     {

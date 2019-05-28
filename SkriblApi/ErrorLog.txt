@@ -5769,3 +5769,34 @@ DateTime : 16/05/2019 3:55:40 AM
 MessageObject reference not set to an instance of an object.
 
 StackTrace   at BasketApi.Controllers.UserController.GetCardDetails(Int32 User_Id)
+DateTime : 28/05/2019 6:06:22 PM
+
+
+MessageThe property 'Id' is part of the object's key information and cannot be modified. 
+
+StackTrace   at System.Data.Entity.Core.Objects.EntityEntry.VerifyEntityValueIsEditable(StateManagerTypeMetadata typeMetadata, Int32 ordinal, String memberName)
+   at System.Data.Entity.Core.Objects.EntityEntry.GetAndValidateChangeMemberInfo(String entityMemberName, Object complexObject, String complexObjectMemberName, StateManagerTypeMetadata& typeMetadata, String& changingMemberName, Object& changingObject)
+   at System.Data.Entity.Core.Objects.EntityEntry.EntityMemberChanging(String entityMemberName, Object complexObject, String complexObjectMemberName)
+   at System.Data.Entity.Core.Objects.EntityEntry.EntityMemberChanging(String entityMemberName)
+   at System.Data.Entity.Core.Objects.ObjectStateEntry.System.Data.Entity.Core.Objects.DataClasses.IEntityChangeTracker.EntityMemberChanging(String entityMemberName)
+   at System.Data.Entity.Core.Objects.Internal.SnapshotChangeTrackingStrategy.SetCurrentValue(EntityEntry entry, StateManagerMemberMetadata member, Int32 ordinal, Object target, Object value)
+   at System.Data.Entity.Core.Objects.Internal.EntityWrapper`1.SetCurrentValue(EntityEntry entry, StateManagerMemberMetadata member, Int32 ordinal, Object target, Object value)
+   at System.Data.Entity.Core.Objects.EntityEntry.SetCurrentEntityValue(StateManagerTypeMetadata metadata, Int32 ordinal, Object userObject, Object newValue)
+   at System.Data.Entity.Core.Objects.ObjectStateEntryDbUpdatableDataRecord.SetRecordValue(Int32 ordinal, Object value)
+   at System.Data.Entity.Internal.DbDataRecordPropertyValuesItem.set_Value(Object value)
+   at System.Data.Entity.Internal.InternalPropertyValues.SetValue(IPropertyValuesItem item, Object newValue)
+   at System.Data.Entity.Internal.InternalPropertyValues.SetValues(Object value)
+   at System.Data.Entity.Infrastructure.DbPropertyValues.SetValues(Object obj)
+   at BasketApi.Controllers.UserController.<CorporateUserRegister>d__14.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Controllers\UserController.cs:line 1092
+DateTime : 28/05/2019 6:09:13 PM
+
+
+MessageStore update, insert, or delete statement affected an unexpected number of rows (0). Entities may have been modified or deleted since entities were loaded. See http://go.microsoft.com/fwlink/?LinkId=472540 for information on understanding and handling optimistic concurrency exceptions.
+
+StackTrace   at System.Data.Entity.Internal.InternalContext.SaveChanges()
+   at System.Data.Entity.Internal.LazyInternalContext.SaveChanges()
+   at System.Data.Entity.DbContext.SaveChanges()
+   at BasketApi.Controllers.UserController.<CorporateUserRegister>d__14.MoveNext() in C:\z-aladdin-api\zahidnazir-aladdin-api\SkriblApi\Controllers\UserController.cs:line 1094
+
+Inner Exception : Store update, insert, or delete statement affected an unexpected number of rows (0). Entities may have been modified or deleted since entities were loaded. See http://go.microsoft.com/fwlink/?LinkId=472540 for information on understanding and handling optimistic concurrency exceptions.
+------******------

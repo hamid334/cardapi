@@ -32,7 +32,6 @@ namespace WebApplication1
                         // hold additional metadata for an API. Version and title are required but you can also provide
                         // additional fields by chaining methods off SingleApiVersion.
                         //
-                        c.SchemaId(x => x.FullName);
                         c.SingleApiVersion("v1", "WebApplication1");
 
                         // If you want the output Swagger docs to be indented properly, enable the "PrettyPrint" option.
